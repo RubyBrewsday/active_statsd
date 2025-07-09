@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name = "active_statsd"
   spec.version = ActiveStatsd::VERSION
   spec.authors = ["Mike Poage"]
-  spec.email = ["michael.poage@beehiiv.com"]
+  spec.email = ["poage.michael.cu@gmail.com"]
 
   spec.summary = "ActiveStatsd is a gem that provides a Rails-friendly interface for StatsD."
   spec.description = "ActiveStatsd is a gem that provides a Rails-friendly interface for StatsD."
@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
   # spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
 
   # spec.metadata["homepage_uri"] = spec.homepage
-  # spec.metadata["source_code_uri"] = "TODO: Put your gem's public repo URL here."
+  spec.metadata["source_code_uri"] = "https://github.com/RubyBrewsday/active_statsd"
   # spec.metadata["changelog_uri"] = "TODO: Put your gem's CHANGELOG.md URL here."
 
   # Specify which files should be added to the gem when it is released.
