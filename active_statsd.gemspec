@@ -32,8 +32,6 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  # active_statsd.gemspec
-  spec.add_dependency 'statsd-ruby'
   spec.add_dependency 'rails', '>= 5.0'
 
   # Development dependencies (for testing)
