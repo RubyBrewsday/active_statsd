@@ -12,20 +12,34 @@ module ActiveStatsD
       @counters = Hash.new(0)
       @mutex = Mutex.new
       @forward_socket = UDPSocket.new if forwarding_enabled?
+      @running = false
     end
 
     def start
-      start_aggregation_thread if aggregation_enabled?
+      return if @running  # Don't attempt to start twice
 
       Thread.new do
-        Rails.logger.info "[ActiveStatsD] UDP StatsD listener started on #{@host}:#{@port} (aggregation=#{@aggregation})"
         begin
-          Socket.udp_server_loop(@host, @port) do |msg, _|
+          sockets = Socket.udp_server_sockets(@host, @port)
+        rescue Errno::EADDRINUSE
+          Rails.logger.warn "[ActiveStatsD] Server already running on #{@host}:#{@port}, skipping startup."
+          next
+        end
+
+        @running = true
+        Rails.logger.info "[ActiveStatsD] UDP StatsD listener started on #{@host}:#{@port} (aggregation=#{@aggregation})"
+        start_aggregation_thread if aggregation_enabled?
+
+        begin
+          Socket.udp_server_loop_on(sockets) do |msg, _|
             Rails.logger.debug "[ActiveStatsD] UDP packet received: #{msg.strip}"
             handle_message(msg.strip)
           end
         rescue => e
           Rails.logger.error "[ActiveStatsD] Server error: #{e.class.name} - #{e.message}\n#{e.backtrace.join("\n")}"
+        ensure
+          sockets.each(&:close)
+          @running = false
         end
       end
     end
@@ -34,17 +48,10 @@ module ActiveStatsD
 
     def handle_message(message)
       metric, value, type = parse_metric(message)
-
       return unless metric && type == 'c'
 
-      if aggregation_enabled?
-        @mutex.synchronize { @counters[metric] += value }
-      end
-
-      if forwarding_enabled?
-        forward_message(message)
-      end
-
+      @mutex.synchronize { @counters[metric] += value } if aggregation_enabled?
+      forward_message(message) if forwarding_enabled?
       log_message(metric, value, type) unless aggregation_enabled?
     end
 
