@@ -48,7 +48,7 @@ module ActiveStatsD
 
     def handle_message(message)
       metric, value, type = parse_metric(message)
-      return unless metric && type == 'c'
+      return unless metric && %w[c g ms].include?(type)
 
       @mutex.synchronize { @counters[metric] += value } if aggregation_enabled?
       forward_message(message) if forwarding_enabled?
