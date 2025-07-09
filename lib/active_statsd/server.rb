@@ -3,18 +3,22 @@ require 'socket'
 
 module ActiveStatsD
   class Server
-    def initialize(host: '127.0.0.1', port: 8125)
+    def initialize(host:, port:, aggregation:, forward_host:, forward_port:)
       @host = host
       @port = port
+      @aggregation = aggregation
+      @forward_host = forward_host
+      @forward_port = forward_port
       @counters = Hash.new(0)
       @mutex = Mutex.new
+      @forward_socket = UDPSocket.new if forwarding_enabled?
     end
 
     def start
-      start_aggregation_thread
+      start_aggregation_thread if aggregation_enabled?
 
       Thread.new do
-        Rails.logger.info "[ActiveStatsD] UDP StatsD listener started on #{@host}:#{@port}"
+        Rails.logger.info "[ActiveStatsD] UDP StatsD listener started on #{@host}:#{@port} (aggregation=#{@aggregation})"
         begin
           Socket.udp_server_loop(@host, @port) do |msg, _|
             Rails.logger.debug "[ActiveStatsD] UDP packet received: #{msg.strip}"
@@ -33,16 +37,20 @@ module ActiveStatsD
 
       return unless metric && type == 'c'
 
-      @mutex.synchronize do
-        @counters[metric] += value
+      if aggregation_enabled?
+        @mutex.synchronize { @counters[metric] += value }
       end
+
+      if forwarding_enabled?
+        forward_message(message)
+      end
+
+      log_message(metric, value, type) unless aggregation_enabled?
     end
 
     def parse_metric(message)
-      # Example message: "rails_app.test.metric:1|c"
       metric_data, type = message.split('|')
       metric, value = metric_data.split(':')
-
       [metric, value.to_i, type]
     rescue
       Rails.logger.error "[ActiveStatsD] Failed to parse metric: #{message}"
@@ -52,7 +60,7 @@ module ActiveStatsD
     def start_aggregation_thread
       Thread.new do
         loop do
-          sleep 10 # flush metrics every 10 seconds
+          sleep 10
           flush_metrics
         end
       end
@@ -68,6 +76,24 @@ module ActiveStatsD
       snapshot.each do |metric, count|
         Rails.logger.info "[ActiveStatsD] Aggregated metric - #{metric}: #{count}"
       end
+    end
+
+    def forwarding_enabled?
+      @forward_host && @forward_port
+    end
+
+    def aggregation_enabled?
+      @aggregation
+    end
+
+    def forward_message(message)
+      @forward_socket.send(message, 0, @forward_host, @forward_port)
+    rescue => e
+      Rails.logger.error "[ActiveStatsD] Forwarding error: #{e.message}"
+    end
+
+    def log_message(metric, value, type)
+      Rails.logger.info "[ActiveStatsD] Metric received (no aggregation) - #{metric}:#{value}|#{type}"
     end
   end
 end

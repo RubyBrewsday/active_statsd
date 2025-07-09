@@ -7,12 +7,12 @@ module ActiveStatsD
       ActiveSupport.on_load(:after_initialize) do
         server = ActiveStatsD::Server.new(
           host: ActiveStatsD.configuration.host,
-          port: ActiveStatsD.configuration.port
+          port: ActiveStatsD.configuration.port,
+          aggregation: ActiveStatsD.configuration.aggregation,
+          forward_host: ActiveStatsD.configuration.forward_host,
+          forward_port: ActiveStatsD.configuration.forward_port
         )
-
         server.start
-
-        Rails.logger.info "[ActiveStatsD] Embedded StatsD server started on #{ActiveStatsD.configuration.host}:#{ActiveStatsD.configuration.port}"
       end
     end
 

@@ -10,15 +10,15 @@ Gem::Specification.new do |spec|
 
   spec.summary = "ActiveStatsd is a gem that provides a Rails-friendly interface for StatsD."
   spec.description = "ActiveStatsd is a gem that provides a Rails-friendly interface for StatsD."
-  spec.homepage = "https://github.com/beehiiv/active_statsd"
+  spec.homepage = "https://github.com/RubyBrewsday/active_statsd"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.6.0"
 
-  # spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
+  spec.metadata["allowed_push_host"] = "https://rubygems.org"
 
-  # spec.metadata["homepage_uri"] = spec.homepage
+  spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/RubyBrewsday/active_statsd"
-  # spec.metadata["changelog_uri"] = "TODO: Put your gem's CHANGELOG.md URL here."
+  spec.metadata["changelog_uri"] = "https://github.com/RubyBrewsday/active_statsd/blob/main/CHANGELOG.md"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
