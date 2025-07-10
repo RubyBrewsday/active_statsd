@@ -4,6 +4,7 @@
 require 'rails'
 
 module ActiveStatsD
+  # Railtie for ActiveStatsD to start the server and extend Rails.
   class Railtie < Rails::Railtie
     initializer 'active_statsd.start_server' do
       ActiveSupport.on_load(:after_initialize) do

@@ -4,6 +4,7 @@
 require 'rails/generators'
 
 module ActiveStatsD
+  # Generator for ActiveStatsD initializer.
   class ActiveStatsDGenerator < Rails::Generators::Base
     source_root File.expand_path('templates', __dir__)
 

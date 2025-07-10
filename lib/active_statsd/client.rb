@@ -4,6 +4,7 @@
 require 'socket'
 
 module ActiveStatsD
+  # Client for sending metrics to a StatsD server via UDP.
   class Client
     def initialize(host:, port:, namespace:)
       @host = host

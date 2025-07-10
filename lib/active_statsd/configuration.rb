@@ -2,6 +2,7 @@
 
 # lib/active_statsd/configuration.rb
 module ActiveStatsD
+  # Configuration class for ActiveStatsD settings.
   class Configuration
     attr_accessor :host, :port, :namespace, :aggregation, :forward_host, :forward_port
 

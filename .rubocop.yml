@@ -1,5 +1,13 @@
 AllCops:
   NewCops: enable
 
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "active_statsd.gemspec"
+
 Layout/LineLength:
   Max: 120

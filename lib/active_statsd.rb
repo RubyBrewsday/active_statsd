@@ -7,6 +7,7 @@ require 'active_statsd/client'
 require 'active_statsd/rails_integration'
 require 'active_statsd/railtie' if defined?(Rails)
 
+# ActiveStatsD provides a simple interface for sending metrics to StatsD servers.
 module ActiveStatsD
   class << self
     def configure

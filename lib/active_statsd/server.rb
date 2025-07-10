@@ -5,6 +5,7 @@ require 'socket'
 require 'concurrent'
 
 module ActiveStatsD
+  # Server for receiving metrics from StatsD clients via UDP.
   class Server
     def initialize(host:, port:, aggregation:, forward_host:, forward_port:)
       @host = host
@@ -22,32 +23,42 @@ module ActiveStatsD
       return if @running.true? # clearly avoid duplicate startup attempts
 
       Thread.new do
-        begin
-          sockets = Socket.udp_server_sockets(@host, @port)
-        rescue Errno::EADDRINUSE
-          Rails.logger.warn "[ActiveStatsD] Server already running on #{@host}:#{@port}, skipping startup."
-          next
-        end
-
-        @running.make_true
-        Rails.logger.info "[ActiveStatsD] UDP StatsD listener started on #{@host}:#{@port} (aggregation=#{@aggregation})"
-        start_aggregation_thread if aggregation_enabled?
-
-        begin
-          Socket.udp_server_loop_on(sockets) do |msg, _|
-            Rails.logger.debug "[ActiveStatsD] UDP packet received: #{msg.strip}"
-            handle_message(msg.strip)
-          end
-        rescue StandardError => e
-          Rails.logger.error "[ActiveStatsD] Server error: #{e.class.name} - #{e.message}\n#{e.backtrace.join("\n")}"
-        ensure
-          sockets.each(&:close)
-          @running.make_false
-        end
+        sockets = initialize_server
+        run_server_loop(sockets) if sockets
+      rescue StandardError => e
+        Rails.logger.error "[ActiveStatsD] Server error: #{e.class.name} - #{e.message}\n#{e.backtrace.join("\n")}"
+      ensure
+        @running.make_false
       end
     end
 
     private
+
+    def initialize_server
+      sockets = setup_sockets
+      return unless sockets
+
+      @running.make_true
+      Rails.logger.info "[ActiveStatsD] UDP StatsD listener started on #{@host}:#{@port} (aggregation=#{@aggregation})"
+      start_aggregation_thread if aggregation_enabled?
+      sockets
+    end
+
+    def setup_sockets
+      Socket.udp_server_sockets(@host, @port)
+    rescue Errno::EADDRINUSE
+      Rails.logger.warn "[ActiveStatsD] Server already running on #{@host}:#{@port}, skipping startup."
+      nil
+    end
+
+    def run_server_loop(sockets)
+      Socket.udp_server_loop_on(sockets) do |msg, _|
+        Rails.logger.debug "[ActiveStatsD] UDP packet received: #{msg.strip}"
+        handle_message(msg.strip)
+      end
+    ensure
+      sockets.each(&:close)
+    end
 
     def handle_message(message)
       metric, value, type = parse_metric(message)
