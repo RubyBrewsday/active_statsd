@@ -1,19 +1,11 @@
 # frozen_string_literal: true
 
-require 'active_statsd/version'
-require 'active_statsd/configuration'
-require 'active_statsd/server'
-require 'active_statsd/client'
-require 'active_statsd/rails_integration'
-require 'active_statsd/railtie' if defined?(Rails)
-
-# lib/active_statsd.rb
-require 'active_statsd/version'
-require 'active_statsd/configuration'
-require 'active_statsd/server'
-require 'active_statsd/client'
-require 'active_statsd/rails_integration'
-require 'active_statsd/railtie' if defined?(Rails)
+require "active_statsd/version"
+require "active_statsd/configuration"
+require "active_statsd/server"
+require "active_statsd/client"
+require "active_statsd/rails_integration"
+require "active_statsd/railtie" if defined?(Rails)
 
 module ActiveStatsD
   class << self

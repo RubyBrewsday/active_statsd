@@ -1,5 +1,5 @@
 # lib/active_statsd/client.rb
-require 'socket'
+require "socket"
 
 module ActiveStatsD
   class Client

@@ -1,5 +1,5 @@
 # lib/active_statsd/server.rb
-require 'socket'
+require "socket"
 
 module ActiveStatsD
   class Server
@@ -56,8 +56,8 @@ module ActiveStatsD
     end
 
     def parse_metric(message)
-      metric_data, type = message.split('|')
-      metric, value = metric_data.split(':')
+      metric_data, type = message.split("|")
+      metric, value = metric_data.split(":")
       [metric, value.to_i, type]
     rescue
       Rails.logger.error "[ActiveStatsD] Failed to parse metric: #{message}"

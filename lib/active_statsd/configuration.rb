@@ -4,9 +4,9 @@ module ActiveStatsD
     attr_accessor :host, :port, :namespace, :aggregation, :forward_host, :forward_port
 
     def initialize
-      @host = '127.0.0.1'
+      @host = "127.0.0.1"
       @port = 8125
-      @namespace = 'rails_app'
+      @namespace = "rails_app"
       @aggregation = true  # Aggregation enabled by default
       @forward_host = nil  # Set if forwarding
       @forward_port = nil
