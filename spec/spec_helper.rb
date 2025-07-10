@@ -5,12 +5,16 @@ $LOAD_PATH.unshift File.expand_path('../lib', __dir__)
 require 'active_statsd'
 require 'logger'
 require 'active_support/core_ext/string/inflections'
+require 'active_support/testing/time_helpers'
+require 'active_support/isolated_execution_state'
 
 # Mock Rails.logger explicitly unless Rails is loaded
 unless defined?(Rails)
   module Rails
+    LOGGER = Logger.new($stdout)
+
     def self.logger
-      @logger ||= Logger.new($stdout)
+      LOGGER
     end
 
     def self.stats

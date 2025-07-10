@@ -24,9 +24,9 @@ module ActiveStatsD
     end
 
     def timing(metric, tags: nil, sample_rate: 1.0)
-      start = Time.now
+      start = Time.current
       yield
-      elapsed = ((Time.now - start) * 1000).round
+      elapsed = ((Time.current - start) * 1000).round
       send_metric("#{metric}:#{elapsed}|ms", tags: tags, sample_rate: sample_rate)
     end
 

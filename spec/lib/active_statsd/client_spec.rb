@@ -3,10 +3,11 @@
 require 'spec_helper'
 
 RSpec.describe ActiveStatsD::Client do
-  let(:socket) { instance_double(UDPSocket) }
   subject do
     described_class.new(host: '127.0.0.1', port: 9125, namespace: 'test')
   end
+
+  let(:socket) { instance_double(UDPSocket) }
 
   before { allow(UDPSocket).to receive(:new).and_return(socket) }
 

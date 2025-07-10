@@ -4,7 +4,7 @@
 module ActiveStatsD
   # Sidekiq middleware for ActiveStatsD.
   class SidekiqMiddleware
-    def call(worker, job, queue, &block)
+    def call(worker, _job, _queue, &block)
       Rails.stats.timing("sidekiq.#{worker.class.name.underscore}.perform", &block)
       Rails.stats.increment('sidekiq.jobs.processed', tags: { worker: worker.class.name })
     rescue StandardError => e

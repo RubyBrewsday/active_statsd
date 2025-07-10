@@ -35,10 +35,16 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'concurrent-ruby'
   spec.add_dependency 'rails', '>= 5.0'
 
+  spec.add_development_dependency 'benchmark-ips', '~> 2.12'
   spec.add_development_dependency 'rake'
   spec.add_development_dependency 'rspec'
   spec.add_development_dependency 'rspec-rails'
   spec.add_development_dependency 'rubocop', '~> 1.63'
-  spec.add_development_dependency 'standard'
+  spec.add_development_dependency 'rubocop-performance'
+  spec.add_development_dependency 'rubocop-rails'
+  spec.add_development_dependency 'rubocop-rake'
+  spec.add_development_dependency 'rubocop-rspec'
+  spec.add_development_dependency 'rubocop-rspec_rails'
+  spec.add_development_dependency 'rubocop-thread_safety'
   spec.metadata['rubygems_mfa_required'] = 'true'
 end

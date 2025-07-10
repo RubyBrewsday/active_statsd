@@ -11,3 +11,13 @@ Metrics/BlockLength:
 
 Layout/LineLength:
   Max: 120
+
+ThreadSafety/DirChdir:
+  Exclude:
+    - "active_statsd.gemspec"
+
+plugins:
+  - rubocop-performance
+  - rubocop-rails
+  - rubocop-rake
+  - rubocop-thread_safety

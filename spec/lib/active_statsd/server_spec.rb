@@ -30,7 +30,7 @@ RSpec.describe ActiveStatsD::Server do
       expect(server).to receive(:flush_metrics)
       server.stop
       shutdown_flag = server.instance_variable_get(:@shutdown)
-      expect(shutdown_flag.true?).to eq(true)
+      expect(shutdown_flag.true?).to be(true)
     end
   end
 
