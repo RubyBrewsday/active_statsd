@@ -45,8 +45,8 @@ module ActiveStatsD
       Rails.logger.error("[ActiveStatsD] Forwarding error: \#{e.message}")
     end
 
-    def log_message(_metric, _value, _type)
-      Rails.logger.info("[ActiveStatsD] Metric received (no aggregation) - \#{metric}:\#{value}|\#{type}")
+    def log_message(metric, value, type)
+      Rails.logger.info("[ActiveStatsD] Metric received (no aggregation) - #{metric}:#{value}|#{type}")
     end
   end
 
@@ -136,8 +136,8 @@ module ActiveStatsD
         atomic_count.value = 0
       end
 
-      snapshot.each do |_metric, _count|
-        Rails.logger.info("[ActiveStatsD] Aggregated metric - \#{metric}: \#{count}")
+      snapshot.each do |metric, count|
+        Rails.logger.info("[ActiveStatsD] Aggregated metric - #{metric}: #{count}")
       end
     end
 
