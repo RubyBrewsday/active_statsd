@@ -1,5 +1,5 @@
 # lib/active_statsd/client.rb
-require "socket"
+require 'socket'
 
 module ActiveStatsD
   class Client
@@ -31,7 +31,7 @@ module ActiveStatsD
     def send_metric(data)
       namespaced_data = "#{@namespace}.#{data}"
       @socket.send(namespaced_data, 0, @host, @port)
-    rescue => e
+    rescue StandardError => e
       Rails.logger.error "[ActiveStatsD] Client error: #{e.message}"
     end
   end

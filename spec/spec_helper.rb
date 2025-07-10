@@ -1,9 +1,9 @@
 # spec/spec_helper.rb
 # frozen_string_literal: true
 
-$LOAD_PATH.unshift File.expand_path("../lib", __dir__)
-require "active_statsd"
-require "logger"
+$LOAD_PATH.unshift File.expand_path('../lib', __dir__)
+require 'active_statsd'
+require 'logger'
 
 # Mock Rails.logger explicitly unless Rails is loaded
 unless defined?(Rails)
@@ -15,7 +15,7 @@ unless defined?(Rails)
 end
 
 RSpec.configure do |config|
-  config.example_status_persistence_file_path = ".rspec_status"
+  config.example_status_persistence_file_path = '.rspec_status'
   config.disable_monkey_patching!
 
   config.expect_with :rspec do |c|

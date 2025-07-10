@@ -1,9 +1,9 @@
 # lib/active_statsd/railtie.rb
-require "rails"
+require 'rails'
 
 module ActiveStatsD
   class Railtie < Rails::Railtie
-    initializer "active_statsd.start_server" do
+    initializer 'active_statsd.start_server' do
       ActiveSupport.on_load(:after_initialize) do
         server = ActiveStatsD::Server.new(
           host: ActiveStatsD.configuration.host,
@@ -16,7 +16,7 @@ module ActiveStatsD
       end
     end
 
-    initializer "active_statsd.extend_rails" do
+    initializer 'active_statsd.extend_rails' do
       ActiveSupport.on_load(:after_initialize) do
         Rails.extend ActiveStatsD::RailsIntegration
       end

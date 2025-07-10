@@ -1,6 +1,6 @@
 # lib/active_statsd/server.rb
-require "socket"
-require "concurrent"
+require 'socket'
+require 'concurrent'
 
 module ActiveStatsD
   class Server
@@ -36,7 +36,7 @@ module ActiveStatsD
             Rails.logger.debug "[ActiveStatsD] UDP packet received: #{msg.strip}"
             handle_message(msg.strip)
           end
-        rescue => e
+        rescue StandardError => e
           Rails.logger.error "[ActiveStatsD] Server error: #{e.class.name} - #{e.message}\n#{e.backtrace.join("\n")}"
         ensure
           sockets.each(&:close)
@@ -51,20 +51,19 @@ module ActiveStatsD
       metric, value, type = parse_metric(message)
       return unless metric && %w[c g ms].include?(type)
 
-      if aggregation_enabled?
-        @counters[metric].increment(value)
-      end
+      @counters[metric].increment(value) if aggregation_enabled?
 
       forward_message(message) if forwarding_enabled?
       log_message(metric, value, type) unless aggregation_enabled?
     end
 
     def parse_metric(message)
-      metric_data, type = message.split("|")
-      metric, value = metric_data&.split(":")
-      raise ArgumentError, "Invalid metric format" unless metric && value && type
+      metric_data, type = message.split('|')
+      metric, value = metric_data&.split(':')
+      raise ArgumentError, 'Invalid metric format' unless metric && value && type
+
       [metric, Integer(value), type]
-    rescue => e
+    rescue StandardError => e
       Rails.logger.error "[ActiveStatsD] Failed to parse metric: #{message} (#{e.message})"
       nil
     end
@@ -102,7 +101,7 @@ module ActiveStatsD
 
     def forward_message(message)
       @forward_socket.send(message, 0, @forward_host, @forward_port)
-    rescue => e
+    rescue StandardError => e
       Rails.logger.error "[ActiveStatsD] Forwarding error: #{e.message}"
     end
 

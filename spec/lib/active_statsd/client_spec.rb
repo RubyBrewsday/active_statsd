@@ -1,20 +1,20 @@
-require "spec_helper"
+require 'spec_helper'
 
 RSpec.describe ActiveStatsD::Client do
   let(:socket) { instance_double(UDPSocket) }
-  subject {
+  subject do
     described_class.new(host: '127.0.0.1', port: 9125, namespace: 'test')
-  }
+  end
 
   before { allow(UDPSocket).to receive(:new).and_return(socket) }
 
   it 'increments a metric' do
-    expect(socket).to receive(:send).with("test.counter:1|c", 0, '127.0.0.1', 9125)
+    expect(socket).to receive(:send).with('test.counter:1|c', 0, '127.0.0.1', 9125)
     subject.increment('counter')
   end
 
   it 'sends gauge metrics' do
-    expect(socket).to receive(:send).with("test.gauge:10|g", 0, '127.0.0.1', 9125)
+    expect(socket).to receive(:send).with('test.gauge:10|g', 0, '127.0.0.1', 9125)
     subject.gauge('gauge', 10)
   end
 
