@@ -32,7 +32,9 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
+  spec.add_dependency 'async'
   spec.add_dependency 'concurrent-ruby'
+  spec.add_dependency 'io-endpoint'
   spec.add_dependency 'rails', '>= 5.0'
 
   spec.add_development_dependency 'benchmark-ips', '~> 2.12'
