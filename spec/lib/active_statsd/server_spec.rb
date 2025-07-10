@@ -3,15 +3,18 @@
 require 'spec_helper'
 
 RSpec.describe ActiveStatsD::Server do
-  let(:server) do
-    described_class.new(
-      host: '127.0.0.1',
-      port: 9125,
-      aggregation: true,
-      forward_host: nil,
-      forward_port: nil
-    )
+  let(:config) do
+    config = ActiveStatsD::Configuration.new
+    config.host = '127.0.0.1'
+    config.port = 9125
+    config.aggregation = true
+    config.forward_host = nil
+    config.forward_port = nil
+    config.flush_interval = 10
+    config
   end
+
+  let(:server) { described_class.new(config) }
 
   before { allow(Rails.logger).to receive(:info) }
 

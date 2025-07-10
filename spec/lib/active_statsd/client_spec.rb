@@ -24,4 +24,9 @@ RSpec.describe ActiveStatsD::Client do
     expect(socket).to receive(:send).with(/test.timing:\d+\|ms/, 0, '127.0.0.1', 9125)
     subject.timing('timing') { sleep(0.01) }
   end
+
+  it 'increments metric with tags and sample_rate' do
+    expect(socket).to receive(:send).with('test.counter:1|c|@0.5|#region:us-east', 0, '127.0.0.1', 9125)
+    subject.increment('counter', tags: { region: 'us-east' }, sample_rate: 0.5)
+  end
 end

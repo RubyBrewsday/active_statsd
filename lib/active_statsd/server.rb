@@ -6,19 +6,56 @@ require 'concurrent'
 require 'json'
 
 module ActiveStatsD
+  # Metric handling functionality for the StatsD server.
+  module MetricHandler
+    def handle_message(message)
+      metric, value, type = parse_metric(message)
+      if metric.nil?
+        Rails.logger.warn({ event: 'invalid_metric', raw_message: message }.to_json)
+        return
+      end
+
+      process_metric(metric, value, type, message)
+    rescue StandardError => e
+      Rails.logger.error({ event: 'unexpected_error', error: e.message, backtrace: e.backtrace }.to_json)
+    end
+
+    def process_metric(metric, value, type, message)
+      @counters[metric].increment(value) if aggregation_enabled?
+
+      forward_message(message) if forwarding_enabled?
+      log_message(metric, value, type) unless aggregation_enabled?
+    end
+
+    def parse_metric(message)
+      metric_data, type = message.split('|')
+      metric, value = metric_data&.split(':')
+      raise ArgumentError, 'Invalid metric format' unless metric && value && type
+
+      [metric, Integer(value), type]
+    rescue StandardError => e
+      Rails.logger.error "[ActiveStatsD] Failed to parse metric: #{message} (#{e.message})"
+      nil
+    end
+
+    def forward_message(message)
+      @forward_socket.send(message, 0, @forward_host, @forward_port)
+    rescue StandardError => e
+      Rails.logger.error "[ActiveStatsD] Forwarding error: #{e.message}"
+    end
+
+    def log_message(metric, value, type)
+      Rails.logger.info "[ActiveStatsD] Metric received (no aggregation) - #{metric}:#{value}|#{type}"
+    end
+  end
+
   # Server for receiving metrics from StatsD clients via UDP.
   class Server
-    def initialize(host:, port:, aggregation:, forward_host:, forward_port:)
-      @host = host
-      @port = port
-      @aggregation = aggregation
-      @forward_host = forward_host
-      @forward_port = forward_port
+    include MetricHandler
 
-      @counters = Concurrent::Hash.new { |hash, key| hash[key] = Concurrent::AtomicFixnum.new(0) }
-      @forward_socket = UDPSocket.new if forwarding_enabled?
-      @running = Concurrent::AtomicBoolean.new(false)
-      @shutdown = Concurrent::AtomicBoolean.new(false)
+    def initialize(config)
+      initialize_config(config)
+      initialize_state
     end
 
     def start
@@ -37,6 +74,22 @@ module ActiveStatsD
     end
 
     private
+
+    def initialize_config(config)
+      @host = config.host
+      @port = config.port
+      @aggregation = config.aggregation
+      @forward_host = config.forward_host
+      @forward_port = config.forward_port
+      @flush_interval = config.flush_interval
+    end
+
+    def initialize_state
+      @counters = Concurrent::Hash.new { |hash, key| hash[key] = Concurrent::AtomicFixnum.new(0) }
+      @forward_socket = UDPSocket.new if forwarding_enabled?
+      @running = Concurrent::AtomicBoolean.new(false)
+      @shutdown = Concurrent::AtomicBoolean.new(false)
+    end
 
     def setup_signal_handlers
       %w[INT TERM].each do |signal|
@@ -65,36 +118,10 @@ module ActiveStatsD
       sockets.each(&:close)
     end
 
-    def handle_message(message)
-      metric, value, type = parse_metric(message)
-      if metric.nil?
-        Rails.logger.warn({ event: 'invalid_metric', raw_message: message }.to_json)
-        return
-      end
-
-      @counters[metric].increment(value) if aggregation_enabled?
-
-      forward_message(message) if forwarding_enabled?
-      log_message(metric, value, type) unless aggregation_enabled?
-    rescue StandardError => e
-      Rails.logger.error({ event: 'unexpected_error', error: e.message, backtrace: e.backtrace }.to_json)
-    end
-
-    def parse_metric(message)
-      metric_data, type = message.split('|')
-      metric, value = metric_data&.split(':')
-      raise ArgumentError, 'Invalid metric format' unless metric && value && type
-
-      [metric, Integer(value), type]
-    rescue StandardError => e
-      Rails.logger.error "[ActiveStatsD] Failed to parse metric: #{message} (#{e.message})"
-      nil
-    end
-
     def start_aggregation_thread
       Thread.new do
         loop do
-          sleep 10 # configurable interval could be added later
+          sleep @flush_interval
           flush_metrics
         end
       end
@@ -120,16 +147,6 @@ module ActiveStatsD
 
     def aggregation_enabled?
       @aggregation
-    end
-
-    def forward_message(message)
-      @forward_socket.send(message, 0, @forward_host, @forward_port)
-    rescue StandardError => e
-      Rails.logger.error "[ActiveStatsD] Forwarding error: #{e.message}"
-    end
-
-    def log_message(metric, value, type)
-      Rails.logger.info "[ActiveStatsD] Metric received (no aggregation) - #{metric}:#{value}|#{type}"
     end
   end
 end
