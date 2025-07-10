@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # lib/active_statsd/server.rb
 require 'socket'
 require 'concurrent'
@@ -82,7 +84,7 @@ module ActiveStatsD
 
       @counters.each_pair do |metric, atomic_count|
         count = atomic_count.value
-        snapshot[metric] = count if count > 0
+        snapshot[metric] = count if count.positive?
         atomic_count.value = 0
       end
 

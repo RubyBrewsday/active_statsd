@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # lib/active_statsd/configuration.rb
 module ActiveStatsD
   class Configuration

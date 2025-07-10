@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # lib/generators/active_statsd/active_statsd_generator.rb
 require 'rails/generators'
 
