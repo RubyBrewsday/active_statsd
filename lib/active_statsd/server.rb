@@ -61,10 +61,11 @@ module ActiveStatsD
 
     def parse_metric(message)
       metric_data, type = message.split("|")
-      metric, value = metric_data.split(":")
-      [metric, value.to_i, type]
-    rescue
-      Rails.logger.error "[ActiveStatsD] Failed to parse metric: #{message}"
+      metric, value = metric_data&.split(":")
+      raise ArgumentError, "Invalid metric format" unless metric && value && type
+      [metric, Integer(value), type]
+    rescue => e
+      Rails.logger.error "[ActiveStatsD] Failed to parse metric: #{message} (#{e.message})"
       nil
     end
 
