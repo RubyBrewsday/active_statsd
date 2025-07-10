@@ -4,12 +4,12 @@ require_relative "lib/active_statsd/version"
 
 Gem::Specification.new do |spec|
   spec.name = "active_statsd"
-  spec.version = ActiveStatsd::VERSION
+  spec.version = ActiveStatsD::VERSION
   spec.authors = ["Mike Poage"]
   spec.email = ["poage.michael.cu@gmail.com"]
 
-  spec.summary = "ActiveStatsd is a gem that provides a Rails-friendly interface for StatsD."
-  spec.description = "ActiveStatsd is a gem that provides a Rails-friendly interface for StatsD."
+  spec.summary = "ActiveStatsD is a gem that provides a Rails-friendly interface for StatsD."
+  spec.description = "ActiveStatsD is a gem that provides a Rails-friendly interface for StatsD."
   spec.homepage = "https://github.com/RubyBrewsday/active_statsd"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.6.0"
