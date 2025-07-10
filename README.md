@@ -56,6 +56,30 @@ end
 
 ---
 
+## Performance
+
+Measured on a MacBook Pro M2 Max:
+
+```
+Warming up --------------------------------------
+   increment counter    17.167k i/100ms
+        gauge metric    17.009k i/100ms
+       timing metric    79.000 i/100ms
+Calculating -------------------------------------
+   increment counter    176.564k (± 9.9%) i/s    (5.66 μs/i) -      1.751M in  10.038152s
+        gauge metric    169.860k (± 9.2%) i/s    (5.89 μs/i) -      1.684M in  10.013536s
+       timing metric    824.802 (± 5.2%) i/s    (1.21 ms/i) -      8.295k in  10.089701s
+
+Comparison:
+   increment counter:   176564.0 i/s
+        gauge metric:   169859.9 i/s - same-ish: difference falls within error
+       timing metric:      824.8 i/s - 214.07x  slower
+```
+
+_Benchmarked with `benchmark-ips` over 10s runs, reusing a single UDP socket._
+
+---
+
 ## Development Mode (Embedded Server)
 
 In development mode, ActiveStatsD automatically runs an embedded UDP StatsD server to locally aggregate metrics. Aggregated metrics are flushed to your Rails logs every 10 seconds:
