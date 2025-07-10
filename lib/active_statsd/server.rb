@@ -3,6 +3,7 @@
 # lib/active_statsd/server.rb
 require 'socket'
 require 'concurrent'
+require 'json'
 
 module ActiveStatsD
   # Server for receiving metrics from StatsD clients via UDP.
@@ -17,43 +18,47 @@ module ActiveStatsD
       @counters = Concurrent::Hash.new { |hash, key| hash[key] = Concurrent::AtomicFixnum.new(0) }
       @forward_socket = UDPSocket.new if forwarding_enabled?
       @running = Concurrent::AtomicBoolean.new(false)
+      @shutdown = Concurrent::AtomicBoolean.new(false)
     end
 
     def start
-      return if @running.true? # clearly avoid duplicate startup attempts
+      return if @running.true?
 
-      Thread.new do
-        sockets = initialize_server
-        run_server_loop(sockets) if sockets
-      rescue StandardError => e
-        Rails.logger.error "[ActiveStatsD] Server error: #{e.class.name} - #{e.message}\n#{e.backtrace.join("\n")}"
-      ensure
-        @running.make_false
-      end
+      setup_signal_handlers
+      Thread.new { run_udp_listener }
+      start_aggregation_thread if aggregation_enabled?
+    end
+
+    def stop
+      Rails.logger.info '[ActiveStatsD] Shutting down UDP listener...'
+      @shutdown.make_true
+      flush_metrics if aggregation_enabled?
+      Rails.logger.info '[ActiveStatsD] Shutdown complete.'
     end
 
     private
 
-    def initialize_server
-      sockets = setup_sockets
-      return unless sockets
+    def setup_signal_handlers
+      %w[INT TERM].each do |signal|
+        Signal.trap(signal) { stop }
+      end
+    end
 
+    def run_udp_listener
       @running.make_true
-      Rails.logger.info "[ActiveStatsD] UDP StatsD listener started on #{@host}:#{@port} (aggregation=#{@aggregation})"
-      start_aggregation_thread if aggregation_enabled?
-      sockets
+      Rails.logger.info '[ActiveStatsD] UDP listener running...'
+      run_socket_loop
+    rescue StandardError => e
+      Rails.logger.error "[ActiveStatsD] Listener error: #{e.message}"
+    ensure
+      @running.make_false
     end
 
-    def setup_sockets
-      Socket.udp_server_sockets(@host, @port)
-    rescue Errno::EADDRINUSE
-      Rails.logger.warn "[ActiveStatsD] Server already running on #{@host}:#{@port}, skipping startup."
-      nil
-    end
-
-    def run_server_loop(sockets)
+    def run_socket_loop
+      sockets = Socket.udp_server_sockets(@host, @port)
       Socket.udp_server_loop_on(sockets) do |msg, _|
-        Rails.logger.debug "[ActiveStatsD] UDP packet received: #{msg.strip}"
+        break if @shutdown.true?
+
         handle_message(msg.strip)
       end
     ensure
@@ -62,12 +67,17 @@ module ActiveStatsD
 
     def handle_message(message)
       metric, value, type = parse_metric(message)
-      return unless metric && %w[c g ms].include?(type)
+      if metric.nil?
+        Rails.logger.warn({ event: 'invalid_metric', raw_message: message }.to_json)
+        return
+      end
 
       @counters[metric].increment(value) if aggregation_enabled?
 
       forward_message(message) if forwarding_enabled?
       log_message(metric, value, type) unless aggregation_enabled?
+    rescue StandardError => e
+      Rails.logger.error({ event: 'unexpected_error', error: e.message, backtrace: e.backtrace }.to_json)
     end
 
     def parse_metric(message)

@@ -21,6 +21,16 @@ RSpec.describe ActiveStatsD::Server do
     end
   end
 
+  describe '#stop' do
+    it 'sets shutdown flag and flushes metrics' do
+      server.start
+      expect(server).to receive(:flush_metrics)
+      server.stop
+      shutdown_flag = server.instance_variable_get(:@shutdown)
+      expect(shutdown_flag.true?).to eq(true)
+    end
+  end
+
   describe '#handle_message' do
     it 'aggregates counter metrics correctly' do
       server.send(:handle_message, 'test.metric:1|c')
