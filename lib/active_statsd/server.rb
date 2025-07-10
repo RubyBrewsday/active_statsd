@@ -1,5 +1,6 @@
 # lib/active_statsd/server.rb
 require "socket"
+require "concurrent"
 
 module ActiveStatsD
   class Server
@@ -9,14 +10,14 @@ module ActiveStatsD
       @aggregation = aggregation
       @forward_host = forward_host
       @forward_port = forward_port
-      @counters = Hash.new(0)
-      @mutex = Mutex.new
+
+      @counters = Concurrent::Hash.new { |hash, key| hash[key] = Concurrent::AtomicFixnum.new(0) }
       @forward_socket = UDPSocket.new if forwarding_enabled?
-      @running = false
+      @running = Concurrent::AtomicBoolean.new(false)
     end
 
     def start
-      return if @running  # Don't attempt to start twice
+      return if @running.true? # clearly avoid duplicate startup attempts
 
       Thread.new do
         begin
@@ -26,7 +27,7 @@ module ActiveStatsD
           next
         end
 
-        @running = true
+        @running.make_true
         Rails.logger.info "[ActiveStatsD] UDP StatsD listener started on #{@host}:#{@port} (aggregation=#{@aggregation})"
         start_aggregation_thread if aggregation_enabled?
 
@@ -39,7 +40,7 @@ module ActiveStatsD
           Rails.logger.error "[ActiveStatsD] Server error: #{e.class.name} - #{e.message}\n#{e.backtrace.join("\n")}"
         ensure
           sockets.each(&:close)
-          @running = false
+          @running.make_false
         end
       end
     end
@@ -50,7 +51,10 @@ module ActiveStatsD
       metric, value, type = parse_metric(message)
       return unless metric && %w[c g ms].include?(type)
 
-      @mutex.synchronize { @counters[metric] += value } if aggregation_enabled?
+      if aggregation_enabled?
+        @counters[metric].increment(value)
+      end
+
       forward_message(message) if forwarding_enabled?
       log_message(metric, value, type) unless aggregation_enabled?
     end
@@ -67,7 +71,7 @@ module ActiveStatsD
     def start_aggregation_thread
       Thread.new do
         loop do
-          sleep 10
+          sleep 10 # configurable interval could be added later
           flush_metrics
         end
       end
@@ -75,9 +79,11 @@ module ActiveStatsD
 
     def flush_metrics
       snapshot = {}
-      @mutex.synchronize do
-        snapshot = @counters.dup
-        @counters.clear
+
+      @counters.each_pair do |metric, atomic_count|
+        count = atomic_count.value
+        snapshot[metric] = count if count > 0
+        atomic_count.value = 0
       end
 
       snapshot.each do |metric, count|
