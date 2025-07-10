@@ -16,6 +16,7 @@ Then execute:
 
 ```bash
 bundle install
+rails generate active_stats_d:active_stats_d
 ```
 
 Create an initializer manually at `config/initializers/active_statsd.rb`:
@@ -71,6 +72,20 @@ If aggregation is disabled (`aggregation: false`), each metric is logged immedia
 
 ---
 
+## Sidekiq Integration (Optional)
+
+To automatically track Sidekiq metrics, add this middleware explicitly:
+
+````ruby
+# config/initializers/sidekiq.rb
+Sidekiq.configure_server do |config|
+  config.server_middleware do |chain|
+    chain.add ActiveStatsD::SidekiqMiddleware
+  end
+end
+
+---
+
 ## Production Usage & Datadog Integration
 
 For multi-server setups, disable the local aggregation and forward metrics directly to a centralized aggregator like Datadog:
@@ -83,7 +98,7 @@ ActiveStatsD.configure do |config|
   config.forward_port = 8125
   config.namespace = 'my_rails_app'
 end
-```
+````
 
 ### Datadog Setup
 
