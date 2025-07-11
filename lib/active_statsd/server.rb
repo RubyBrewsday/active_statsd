@@ -1,90 +1,12 @@
-# lib/active_statsd/server.rb
 # frozen_string_literal: true
 
 require 'socket'
 require 'concurrent'
 require 'json'
+require_relative 'handlers/metrics'
+require_relative 'handlers/sockets'
 
 module ActiveStatsD
-  # Handles parsing, aggregation, forwarding, and logging of metrics.
-  module MetricHandler
-    def handle_message(message)
-      metric, value, type = parse_metric(message)
-      if metric.nil?
-        Rails.logger.warn({ event: 'invalid_metric', raw_message: message }.to_json)
-        return
-      end
-
-      process_metric(metric, value, type, message)
-    rescue StandardError => e
-      Rails.logger.error(
-        { event: 'unexpected_error', error: e.message, backtrace: e.backtrace }.to_json
-      )
-    end
-
-    def process_metric(metric, value, type, message)
-      @counters[metric].increment(value) if aggregation_enabled?
-      forward_message(message) if forwarding_enabled?
-      log_message(metric, value, type) unless aggregation_enabled?
-    end
-
-    def parse_metric(message)
-      metric_data, type = message.split('|', 2)
-      metric, value = metric_data&.split(':', 2)
-      raise ArgumentError, 'Invalid metric format' unless metric && value && type
-
-      [metric, Integer(value), type]
-    rescue StandardError => e
-      Rails.logger.error("[ActiveStatsD] Failed to parse metric: #{message} (#{e.message})")
-      nil
-    end
-
-    def forward_message(message)
-      @forward_socket.send(message, 0, @forward_host, @forward_port)
-    rescue StandardError => e
-      Rails.logger.error("[ActiveStatsD] Forwarding error: #{e.message}")
-    end
-
-    def log_message(metric, value, type)
-      Rails.logger.info("[ActiveStatsD] Metric received (no aggregation) - #{metric}:#{value}|#{type}")
-    end
-  end
-
-  # Socket handling functionality for the StatsD server.
-  module SocketHandler
-    def create_and_bind_socket
-      socket = UDPSocket.new(Socket::AF_INET)
-      socket.bind(@host, @port)
-      socket
-    rescue StandardError => e
-      Rails.logger.error "[ActiveStatsD] Socket bind error: #{e.class} - #{e.message}"
-      nil
-    end
-
-    def configure_socket_buffer(socket)
-      socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_RCVBUF, 2**20)
-    rescue StandardError => e
-      Rails.logger.warn "[ActiveStatsD] Could not set SO_RCVBUF: #{e.message}"
-    end
-
-    def listen_for_messages(socket)
-      until @shutdown.true?
-        next unless socket.wait_readable(1)
-
-        process_socket_message(socket)
-      end
-    end
-
-    def process_socket_message(socket)
-      data, _peer = socket.recvfrom_nonblock(4096)
-      handle_message(data.strip)
-    rescue IO::WaitReadable
-      # Continue to next iteration
-    rescue StandardError => e
-      Rails.logger.error "[ActiveStatsD] Listener error: #{e.class} - #{e.message}"
-    end
-  end
-
   # UDP server for receiving and handling StatsD metrics.
   class Server
     include MetricHandler
